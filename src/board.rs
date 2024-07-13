@@ -93,61 +93,57 @@ impl Board {
                 continue;
             }
 
-            if field_num == 0 {
-                Self::parse_char_in_first_fen_field(
+            match field_num {
+                0 => Self::parse_char_in_first_fen_field(
                     character,
                     &mut rank,
                     &mut rank_iter,
                     &mut file_iter,
                     &mut file,
                     &mut board,
-                )?;
-            }
-
-            if field_num == 1 {
-                board.current_turn = Color::try_from(character).map_err(|_| InvalidFenString {})?;
-            }
-
-            if field_num == 2 {
-                if character == '-' {
-                    continue;
+                )?,
+                1 => {
+                    board.current_turn =
+                        Color::try_from(character).map_err(|_| InvalidFenString {})?
                 }
+                2 => {
+                    if character == '-' {
+                        continue;
+                    }
 
-                let colour = if character.is_lowercase() {
-                    Color::White
-                } else {
-                    Color::Black
-                };
+                    let colour = if character.is_lowercase() {
+                        Color::White
+                    } else {
+                        Color::Black
+                    };
 
-                let board_side_opt = BoardSide::try_from(character);
-
-                if let Ok(board_side) = board_side_opt {
+                    let board_side = BoardSide::try_from(character).map_err(|_| InvalidFenString{})?;
                     board.castling_rights.data[colour][board_side] = true;
                 }
-            }
+                3 => {
+                    if character == '-' {
+                        continue;
+                    }
 
-            if field_num == 3 {
-                if character == '-' {
-                    continue;
+                    board.en_passant_target = Some(
+                        Position::try_from([
+                            character,
+                            fen_string_iter.next().ok_or(InvalidFenString {})?,
+                        ])
+                        .map_err(|_| InvalidFenString {})?,
+                    );
+                }
+                4 | 5 => {
+                    let val = character.to_digit(10).ok_or(InvalidFenString {})?;
+
+                    if field_num == 4 {
+                        board.half_move_clock = val;
+                    } else if field_num == 5 {
+                        board.full_move_clock = val;
+                    }
                 }
 
-                board.en_passant_target = Some(
-                    Position::try_from([
-                        character,
-                        fen_string_iter.next().ok_or(InvalidFenString {})?,
-                    ])
-                    .map_err(|_| InvalidFenString {})?,
-                );
-            }
-
-            if field_num == 4 || field_num == 5 {
-                let val = character.to_digit(10).ok_or(InvalidFenString {})?;
-
-                if field_num == 4 {
-                    board.half_move_clock = val;
-                } else if field_num == 5 {
-                    board.full_move_clock = val;
-                }
+                _ => return Err(InvalidFenString {}),
             }
         }
 
