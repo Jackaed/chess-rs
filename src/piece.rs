@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use enum_map::Enum;
 use strum_macros::EnumIter;
 
@@ -57,16 +55,14 @@ impl TryFrom<char> for Piece {
     }
 }
 
-impl Display for Piece {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", {
-            let c = self.ptype.piece_char();
-            if self.color == Color::White {
-                c.to_ascii_uppercase()
-            } else {
-                c.to_ascii_lowercase()
-            }
-        })
+impl Into<char> for &Piece {
+    fn into(self) -> char {
+        let c = self.ptype.piece_char();
+        if self.color == Color::White {
+            c.to_ascii_uppercase()
+        } else {
+            c.to_ascii_lowercase()
+        }
     }
 }
 

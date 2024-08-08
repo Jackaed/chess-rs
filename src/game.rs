@@ -1,28 +1,51 @@
-use crate::{board::Board, piece::Color, player::Player};
+use tokio::sync::watch::{self, Receiver, Sender};
 
-pub struct Game<'a> {
-    white: &'a dyn Player,
-    black: &'a dyn Player,
+use crate::{
+    board::{Board, Outcome},
+    piece::Color,
+    player::Player,
+};
+
+pub struct Game<W: Player, B: Player> {
+    white: W,
+    black: B,
     board: Board,
+    sender: Sender<Board>,
+    receiver: Receiver<Board>,
 }
 
-impl<'a> Game<'a> {
-    pub fn new(white: &'a dyn Player, black: &'a dyn Player) -> Self {
+impl<W: Player, B: Player> Game<W, B> {
+    pub fn view(&self) -> Receiver<Board> {
+        self.receiver.clone()
+    }
+
+    pub fn new(white: W, black: B) -> Self {
+        let board = Board::new();
+        let (sender, receiver) = watch::channel(board);
         Game {
             white,
             black,
-            board: Board::new(),
+            board,
+            sender,
+            receiver,
         }
     }
 
-    pub fn play(&mut self) {
+    pub fn play(&mut self) -> Outcome {
         loop {
-            let piece_move = if self.board.current_turn() == Color::White {
-                self.white.suggest_move(&self.board)
-            } else {
-                self.black.suggest_move(&self.board)
+            if let Some(Outcome) = self.board.get_outcome() {
+                return Outcome;
+            }
+
+            let current_player: &dyn Player = match self.board.current_turn() {
+                Color::White => &self.white,
+                Color::Black => &self.black,
             };
-            self.board.move_piece(&piece_move).unwrap();
+
+            self.board
+                .move_piece(&current_player.suggest_move(&self.board));
+
+            self.sender.send(self.board);
         }
     }
 }
