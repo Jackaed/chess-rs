@@ -27,7 +27,7 @@ fn main() {
     });
 
     loop {
-        println!("{}\n", board_view.borrow().to_string());
+        println!("{}\n", *board_view.borrow());
         thread::sleep(Duration::from_millis(200));
     }
 }
@@ -36,6 +36,7 @@ struct TestPlayer {}
 
 impl Player for TestPlayer {
     fn suggest_move(&self, board: &board::Board) -> half_move::HalfMove {
+        _ = board;
         thread::sleep(Duration::from_secs(5));
         half_move::HalfMove::new(
             Position::new(Axis::A, Axis::A),

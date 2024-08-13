@@ -22,7 +22,7 @@ impl<W: Player, B: Player> Game<W, B> {
     pub fn new(white: W, black: B) -> Self {
         let board = Board::new();
         let (sender, receiver) = watch::channel(board);
-        Game {
+        Self {
             white,
             black,
             board,
@@ -33,8 +33,8 @@ impl<W: Player, B: Player> Game<W, B> {
 
     pub fn play(&mut self) -> Outcome {
         loop {
-            if let Some(Outcome) = self.board.get_outcome() {
-                return Outcome;
+            if let Some(outcome) = self.board.get_outcome() {
+                return outcome;
             }
 
             let current_player: &dyn Player = match self.board.current_turn() {
@@ -42,10 +42,11 @@ impl<W: Player, B: Player> Game<W, B> {
                 Color::Black => &self.black,
             };
 
-            self.board
+            // TODO: do something with these returned values
+            let _ = self.board
                 .move_piece(&current_player.suggest_move(&self.board));
 
-            self.sender.send(self.board);
+            let _ = self.sender.send(self.board);
         }
     }
 }

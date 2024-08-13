@@ -55,10 +55,10 @@ impl TryFrom<char> for Piece {
     }
 }
 
-impl Into<char> for &Piece {
-    fn into(self) -> char {
-        let c = self.ptype.piece_char();
-        if self.color == Color::White {
+impl From<&Piece> for char {
+    fn from(val: &Piece) -> Self {
+        let c = val.ptype.piece_char();
+        if val.color == Color::White {
             c.to_ascii_uppercase()
         } else {
             c.to_ascii_lowercase()

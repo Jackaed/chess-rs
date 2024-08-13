@@ -10,6 +10,7 @@ pub static BISHOP: PieceType = PieceType {
 };
 
 fn generate_moves(board: &Board, color: Color, position: Position) -> Box<[HalfMove]> {
+    _ = (board, color, position);
     println!("Bishop moves");
     todo!();
 }

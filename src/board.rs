@@ -21,6 +21,12 @@ pub struct Board {
     en_passant_target: Option<Position>,
 }
 
+impl Default for Board {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Board {
     pub const fn current_turn(&self) -> Color {
         self.current_turn
@@ -64,7 +70,7 @@ impl Board {
     }
 
     pub fn move_piece(&mut self, half_move: &HalfMove) -> Result<(), InvalidMove> {
-        let piece = self.get(*half_move.from()).ok_or(InvalidMove {
+        let piece = self.get(*half_move.from()).ok_or_else(|| InvalidMove {
             reason: "No piece at position 'from'".to_string(),
         })?;
         self.remove(*half_move.from());
@@ -97,7 +103,7 @@ impl Board {
     ) -> Result<(), InvalidFenString> {
         let mut file_iter = Axis::iter();
         let mut file = file_iter.next();
-        Ok(for character in line.chars() {
+        for character in line.chars() {
             if let Some(digit) = character.to_digit(10) {
                 for _ in 0..digit {
                     file = file_iter.next();
@@ -110,11 +116,12 @@ impl Board {
                 }
                 file = file_iter.next();
             };
-        })
+        };
+        Ok(())
     }
 
     fn parse_current_turn_fen_field(string: &str) -> Result<Color, InvalidFenString> {
-        let character = (string.chars().next().ok_or_else(|| InvalidFenString {}))?;
+        let character = (string.chars().next().ok_or(InvalidFenString {}))?;
         Color::try_from(character).map_err(|_| InvalidFenString {})
     }
 
@@ -137,11 +144,11 @@ impl Board {
     fn parse_en_passant_fen_field(string: &str) -> Result<Option<Position>, InvalidFenString> {
         let mut characters = string.chars();
 
-        let first_character = characters.next().ok_or_else(|| InvalidFenString {})?;
+        let first_character = characters.next().ok_or(InvalidFenString {})?;
         if first_character == '-' {
             return Ok(None);
         };
-        let second_character = characters.next().ok_or_else(|| InvalidFenString {})?;
+        let second_character = characters.next().ok_or(InvalidFenString {})?;
 
         if characters.next().is_some() {
             return Err(InvalidFenString {});
@@ -154,12 +161,12 @@ impl Board {
     }
 
     fn parse_move_clock_fen_field(string: &str) -> Result<u32, InvalidFenString> {
-        Ok(string.parse::<u32>().map_err(|_| InvalidFenString {})?)
+        string.parse::<u32>().map_err(|_| InvalidFenString {})
     }
 
     pub fn from_fen(fen_string: &str) -> Result<Self, InvalidFenString> {
         let fen_fields: Vec<&str> = fen_string.split(' ').collect();
-        Ok(Board {
+        Ok(Self {
             bitboard: Self::parse_data_fen_field(fen_fields[0])?,
             current_turn: Self::parse_current_turn_fen_field(fen_fields[1])?,
             castling_rights: Self::parse_castling_rights_fen_field(fen_fields[2])?,
@@ -199,7 +206,8 @@ impl Board {
         Ok(())
     }
 
-    pub fn get_outcome(&self) -> Option<Outcome> {
+    pub const fn get_outcome(&self) -> Option<Outcome> {
+        _ = self;
         None
     }
 }
