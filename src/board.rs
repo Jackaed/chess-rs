@@ -4,16 +4,18 @@ use enum_map::{enum_map, Enum, EnumMap};
 use strum::IntoEnumIterator;
 
 use crate::{
+    bitboard::Bitboard,
     errors::{InvalidChar, InvalidFenString, InvalidMove},
     half_move::HalfMove,
     piece::{Color, Piece},
+    piece_map::PieceMap,
     pieces,
     position::{self, Axis, Position},
 };
 
 #[derive(Clone, Copy)]
 pub struct Board {
-    bitboard: EnumMap<Color, [Bitboard; 8]>,
+    data: PieceMap<Bitboard>,
     castling_rights: CastlingRights,
     full_move_clock: u32,
     half_move_clock: u32,
@@ -34,7 +36,7 @@ impl Board {
 
     pub fn empty() -> Self {
         Self {
-            bitboard: enum_map! { _ => [Bitboard::new(); 8] },
+            data: PieceMap::new(|_| Bitboard::new()),
             castling_rights: CastlingRights::new(),
             full_move_clock: 0,
             half_move_clock: 0,
@@ -46,7 +48,7 @@ impl Board {
     fn get(&self, position: Position) -> Option<Piece> {
         for ptype in pieces::PIECE_TYPES {
             for color in Color::iter() {
-                if self.bitboard[color][ptype.index() as usize].get(position) {
+                if self.data.get(&Piece::new(ptype, color)).get(position) {
                     return Some(Piece::new(ptype, color));
                 }
             }
@@ -55,12 +57,13 @@ impl Board {
     }
 
     fn set(&mut self, piece: &Piece, position: Position) {
-        self.bitboard[piece.color()][piece.ptype().index() as usize].set(position);
+        self.data.get_mut(piece).set(position);
     }
 
     fn remove(&mut self, position: Position) {
-        for color in Color::iter() {
-            for bitboard in &mut self.bitboard[color] {
+        for ptype in pieces::PIECE_TYPES {
+            for color in Color::iter() {
+                let bitboard = self.data.get_mut(&Piece::new(ptype, color));
                 if bitboard.get(position) {
                     bitboard.remove(position);
                     return;
@@ -84,11 +87,9 @@ impl Board {
             .expect("FEN string for starting board failed to be parsed")
     }
 
-    fn parse_data_fen_field(
-        string: &str,
-    ) -> Result<EnumMap<Color, [Bitboard; 8]>, InvalidFenString> {
+    fn parse_data_fen_field(string: &str) -> Result<PieceMap<Bitboard>, InvalidFenString> {
         let rank_iter = Axis::iter().rev();
-        let mut board = enum_map! { _ => [Bitboard::new(); 8] };
+        let mut board = PieceMap::new(|_| Bitboard::new());
         let lines = string.split('/');
         for (line, rank) in lines.zip(rank_iter) {
             Self::parse_line_in_fen_data_field(line, rank, &mut board)?;
@@ -99,7 +100,7 @@ impl Board {
     fn parse_line_in_fen_data_field(
         line: &str,
         rank: Axis,
-        board: &mut EnumMap<Color, [Bitboard; 8]>,
+        board: &mut PieceMap<Bitboard>,
     ) -> Result<(), InvalidFenString> {
         let mut file_iter = Axis::iter();
         let mut file = file_iter.next();
@@ -112,11 +113,11 @@ impl Board {
                 if let Some(file) = file {
                     let position = Position::new(rank, file);
                     let piece = &Piece::try_from(character).map_err(|_| InvalidFenString {})?;
-                    board[piece.color()][piece.ptype().index() as usize].set(position);
+                    board.get_mut(piece).set(position);
                 }
                 file = file_iter.next();
             };
-        };
+        }
         Ok(())
     }
 
@@ -167,7 +168,7 @@ impl Board {
     pub fn from_fen(fen_string: &str) -> Result<Self, InvalidFenString> {
         let fen_fields: Vec<&str> = fen_string.split(' ').collect();
         Ok(Self {
-            bitboard: Self::parse_data_fen_field(fen_fields[0])?,
+            data: Self::parse_data_fen_field(fen_fields[0])?,
             current_turn: Self::parse_current_turn_fen_field(fen_fields[1])?,
             castling_rights: Self::parse_castling_rights_fen_field(fen_fields[2])?,
             en_passant_target: Self::parse_en_passant_fen_field(fen_fields[3])?,
@@ -212,46 +213,10 @@ impl Board {
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct Bitboard {
-    data: u64,
-}
-
-impl Default for Bitboard {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Bitboard {
-    pub const fn new() -> Self {
-        Self { data: 0 }
-    }
-
-    pub const fn get(self, position: Position) -> bool {
-        self.data & (1 << position.index()) != 0
-    }
-
-    pub fn set(&mut self, position: Position) {
-        self.data |= 1 << (position.index());
-    }
-
-    pub fn remove(&mut self, position: Position) {
-        self.data &= !(1 << (position.index()));
-    }
-
-    pub const fn from_data(data: u64) -> Self {
-        Self { data }
-    }
-
-    pub const fn data(self) -> u64 {
-        self.data
-    }
-}
-
 impl Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let out: String = position::Axis::iter().rev()
+        let out: String = position::Axis::iter()
+            .rev()
             .map(|rank| self.rank_to_string(rank))
             .intersperse("\n".to_string())
             .collect();

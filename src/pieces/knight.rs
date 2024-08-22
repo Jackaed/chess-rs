@@ -11,6 +11,5 @@ pub static KNIGHT: PieceType = PieceType {
 
 fn generate_moves(board: &Board, color: Color, position: Position) -> Box<[HalfMove]> {
     _ = (board, color, position);
-    println!("Knight moves");
-    todo!();
+    todo!("Knight moves not yet implemented");
 }

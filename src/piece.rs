@@ -16,8 +16,8 @@ impl Piece {
         Self { ptype, color }
     }
 
-    pub const fn index(&self) -> u8 {
-        (self.color as u8) * 6 + self.ptype.index()
+    pub const fn index(&self) -> usize {
+        (self.color as usize) * 6 + self.ptype.index()
     }
 
     pub fn get_pseudo_legal_moves(

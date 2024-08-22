@@ -1,9 +1,9 @@
 use enum_map::Enum;
 use strum_macros::{EnumIter, FromRepr};
 
-use crate::errors::InvalidChar;
+use crate::errors::{InvalidChar, PositionOutOfBounds};
 
-#[derive(Enum, Clone, Copy)]
+#[derive(Enum, Clone, Copy, Debug)]
 pub struct Position {
     rank: Axis,
     file: Axis,
@@ -37,7 +37,18 @@ impl TryFrom<[char; 2]> for Position {
     }
 }
 
-#[derive(Enum, Clone, Copy, EnumIter, FromRepr)]
+impl TryFrom<usize> for Position {
+    type Error = PositionOutOfBounds;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        Ok(Self::new(
+            Axis::from_repr(value % 8).ok_or(Self::Error {})?,
+            Axis::from_repr(value / 8).ok_or(Self::Error {})?,
+        ))
+    }
+}
+
+#[derive(Enum, Clone, Copy, EnumIter, FromRepr, Debug)]
 pub enum Axis {
     A,
     B,

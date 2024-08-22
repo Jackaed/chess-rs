@@ -43,7 +43,8 @@ impl<W: Player, B: Player> Game<W, B> {
             };
 
             // TODO: do something with these returned values
-            let _ = self.board
+            let _ = self
+                .board
                 .move_piece(&current_player.suggest_move(&self.board));
 
             let _ = self.sender.send(self.board);

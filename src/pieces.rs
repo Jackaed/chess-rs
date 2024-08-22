@@ -15,7 +15,7 @@ pub use rook::ROOK;
 pub struct PieceType {
     pub name: &'static str,
     pub generate_pseudo_legal_moves: fn(&Board, Color, Position) -> Box<[HalfMove]>,
-    pub piece_index: u8,
+    pub piece_index: usize,
     pub piece_char: char,
 }
 
@@ -47,7 +47,7 @@ impl PieceType {
         (self.generate_pseudo_legal_moves)(board, color, position)
     }
 
-    pub const fn index(&self) -> u8 {
+    pub const fn index(&self) -> usize {
         self.piece_index
     }
 }

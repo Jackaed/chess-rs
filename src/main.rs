@@ -8,11 +8,13 @@ use game::Game;
 use player::Player;
 use position::{Axis, Position};
 
+mod bitboard;
 mod board;
 mod errors;
 mod game;
 mod half_move;
 mod piece;
+mod piece_map;
 mod pieces;
 mod player;
 mod position;
